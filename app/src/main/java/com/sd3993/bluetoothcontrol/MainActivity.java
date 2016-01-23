@@ -9,8 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -73,8 +73,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        connectSuccess = false;
-
         deviceList = new ArrayList<>();
         listDevices = (ListView) findViewById(R.id.list_Device);
 
@@ -95,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
         ledSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                controlLed(isChecked);
+                controlLED(isChecked);
             }
         });
         dcmSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -113,6 +111,9 @@ public class MainActivity extends AppCompatActivity {
                     disconnectDevice();
             }
         });
+
+        connectSuccess = false;
+        updateStatus("<Error>");
     }
 
     @Override
@@ -170,6 +171,7 @@ public class MainActivity extends AppCompatActivity {
             catch (IOException e)
             {
                 connectSuccess = false; //if the try failed, you can check the exception here
+                updateStatus("<Error>");
             }
             return null;
         }
@@ -178,12 +180,11 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
         {
             super.onPostExecute(result);
-            textStatus.setText(connectSuccess ? "Connected to " + pairName : "Not Connected");
+            updateStatus(pairName);
 
             if (!connectSuccess)
             {
                 Toast.makeText(getApplicationContext(),"Connection failed! Please try again",Toast.LENGTH_SHORT).show();
-                finish();
             }
             else
             {
@@ -204,6 +205,11 @@ public class MainActivity extends AppCompatActivity {
         dcmSwitch.setChecked(false);
     }
 
+    public void updateStatus(String pairName) {
+        textStatus.setText(connectSuccess ? "Connected to " + pairName : "Not Connected");
+        btnBluetooth.setText(connectSuccess ? "Disconnect" : "Scan");
+    }
+
     public void disconnectDevice()
     {
         if (btSocket!=null) //If the btSocket is busy
@@ -211,16 +217,17 @@ public class MainActivity extends AppCompatActivity {
             try
             {
                 btSocket.close(); //close connection
+                connectSuccess = false;
+                updateStatus("<Error>");
             }
             catch (IOException e)
             {
                 Toast.makeText(getApplicationContext(),"Error",Toast.LENGTH_SHORT).show();
             }
         }
-        //finish(); //return to the first layout
     }
 
-    public void controlLed(boolean status)
+    public void controlLED(boolean status)
     {
         if (btSocket!=null)
         {
