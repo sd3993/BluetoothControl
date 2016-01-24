@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Bluetooth Control</string>
+    <string name="desc_btnNone">None</string>
+    <string name="desc_btnAll">All</string>
+    <string name="desc_switchDCM">DC Motor</string>
+    <string name="desc_switchLED">LED</string>
+    <string name="header_cardBT">Bluetooth Connection</string>
 </resources>

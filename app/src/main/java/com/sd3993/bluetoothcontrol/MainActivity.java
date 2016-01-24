@@ -1,5 +1,6 @@
 package com.sd3993.bluetoothcontrol;
 
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -28,7 +29,7 @@ import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
-    static final int REQUEST_ENABLE_BT = 1;
+    static final int REQUEST_ENABLE_BT = 0;
 
     BluetoothAdapter mBluetoothAdapter;
     BluetoothSocket btSocket;
@@ -38,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     TextView textStatus;
     Switch ledSwitch, dcmSwitch;
     Button btnBluetooth;
-    boolean connectSuccess;
+    boolean btConnected;
 
     IntentFilter mIntentFilter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
     private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
@@ -79,8 +80,8 @@ public class MainActivity extends AppCompatActivity {
         mArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceList);
         listDevices.setAdapter(mArrayAdapter);
         listDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            public void onItemClick(AdapterView av, View v, int arg2, long arg3) {
-                String pairDevice = ((TextView) v).getText().toString();
+            public void onItemClick(AdapterView mAdapterView, View view, int arg2, long arg3) {
+                String pairDevice = ((TextView) view).getText().toString();
                 new ConnectBT().execute(pairDevice);
             }
         });
@@ -102,18 +103,9 @@ public class MainActivity extends AppCompatActivity {
                 controlDCM(isChecked);
             }
         });
-        btnBluetooth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(connectSuccess)
-                    scanDevices();
-                else
-                    disconnectDevice();
-            }
-        });
 
-        connectSuccess = false;
-        updateStatus("<Error>");
+        btConnected = false;
+        updateBTStatus("<Error>");
     }
 
     @Override
@@ -124,18 +116,6 @@ public class MainActivity extends AppCompatActivity {
             } else
                 finish(); //finish app
         }
-    }
-
-    public void scanDevices() {
-        deviceList.clear();
-        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-        if (pairedDevices.size()>0) {
-            for (BluetoothDevice bt : pairedDevices)
-                deviceList.add(bt.getName() + "\n" + bt.getAddress()); //Get the device's name and the address
-        } else
-            //Toast.makeText(getApplicationContext(), "No Paired Bluetooth Devices Found.", Toast.LENGTH_LONG).show();
-        mBluetoothAdapter.startDiscovery();
-        mArrayAdapter.notifyDataSetChanged();
     }
 
     private class ConnectBT extends AsyncTask<String, Void, Void>  // UI thread
@@ -149,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
         protected void onPreExecute()
         {
             mProgressDialog = ProgressDialog.show(MainActivity.this, "Connecting...", "Please wait");  //show a progress dialog
-            connectSuccess = true;
+            btConnected = true;
         }
 
         @Override
@@ -170,19 +150,19 @@ public class MainActivity extends AppCompatActivity {
             }
             catch (IOException e)
             {
-                connectSuccess = false; //if the try failed, you can check the exception here
-                updateStatus("<Error>");
+                btConnected = false; //if the try failed, you can check the exception here
+                updateBTStatus("<Error>");
             }
             return null;
         }
 
         @Override
-        protected void onPostExecute(Void result) //after the doInBackground, it checks if everything went fine
+        protected void onPostExecute(Void result) //after doInBackground()
         {
             super.onPostExecute(result);
-            updateStatus(pairName);
+            updateBTStatus(pairName);
 
-            if (!connectSuccess)
+            if (!btConnected)
             {
                 Toast.makeText(getApplicationContext(),"Connection failed! Please try again",Toast.LENGTH_SHORT).show();
             }
@@ -195,6 +175,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void scanDevices() {
+        deviceList.clear();
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+        if (pairedDevices.size()>0)
+            for (BluetoothDevice bt : pairedDevices)
+                deviceList.add(bt.getName() + "\n" + bt.getAddress()); //Get the device's name and the address
+
+        mBluetoothAdapter.startDiscovery();
+        mArrayAdapter.notifyDataSetChanged();
+    }
+
     public void clickAll(View view) {
         ledSwitch.setChecked(true);
         dcmSwitch.setChecked(true);
@@ -205,20 +196,29 @@ public class MainActivity extends AppCompatActivity {
         dcmSwitch.setChecked(false);
     }
 
-    public void updateStatus(String pairName) {
-        textStatus.setText(connectSuccess ? "Connected to " + pairName : "Not Connected");
-        btnBluetooth.setText(connectSuccess ? "Disconnect" : "Scan");
+    @SuppressLint("SetTextI18n")
+    public void updateBTStatus(String pairName) {
+        textStatus.setText("Status : " + (btConnected ? "Connected to " + pairName : "Not Connected"));
+        btnBluetooth.setText(btConnected ? "Disconnect" : "Scan");
+        findViewById(R.id.card_DeviceList).setVisibility(btConnected ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    public void setBtnBluetoothFunc(View view) {
+        if(!btConnected)
+            scanDevices();
+        else
+            disconnectDevice();
     }
 
     public void disconnectDevice()
     {
-        if (btSocket!=null) //If the btSocket is busy
+        if (btSocket!=null)
         {
             try
             {
                 btSocket.close(); //close connection
-                connectSuccess = false;
-                updateStatus("<Error>");
+                btConnected = false;
+                updateBTStatus("<Error>");
             }
             catch (IOException e)
             {
