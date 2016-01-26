@@ -1,4 +1,4 @@
-package com.sd3993.bluetoothcontrol;
+package com.sd3993.btc;
 
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
